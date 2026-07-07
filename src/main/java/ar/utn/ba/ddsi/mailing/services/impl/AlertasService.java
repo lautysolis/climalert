@@ -24,10 +24,10 @@ public class AlertasService implements IAlertasService {
     private final List<String> destinatarios;
 
     public AlertasService(
-            IClimaRepository climaRepository, 
-            EmailService emailService,
-            @Value("${email.alertas.remitente}") String remitente,
-            @Value("${email.alertas.destinatarios}") String destinatarios) {
+        IClimaRepository climaRepository,
+        EmailService emailService,
+        @Value("${email.alertas.remitente}") String remitente,
+        @Value("${email.alertas.destinatarios}") String destinatarios) {
         this.climaRepository = climaRepository;
         this.emailService = emailService;
         this.remitente = remitente;
@@ -45,13 +45,13 @@ public class AlertasService implements IAlertasService {
                 climas.stream()
                     .filter(this::cumpleCondicionesAlerta)
                     .forEach(this::generarYEnviarEmail);
-                
+
                 // Marcar todos como procesados
                 climas.forEach(clima -> {
                     clima.setProcesado(true);
                     climaRepository.save(clima);
                 });
-                
+
                 return Mono.empty();
             })
             .onErrorResume(e -> {
@@ -62,20 +62,19 @@ public class AlertasService implements IAlertasService {
     }
 
     private boolean cumpleCondicionesAlerta(Clima clima) {
-        //TODO: podríamos refactorizar el diseño para que no sea un simple método, pues puede ser más complejo
-        return clima.getTemperaturaCelsius() > TEMPERATURA_ALERTA && 
-               clima.getHumedad() > HUMEDAD_ALERTA;
+        return clima.getTemperaturaCelsius() > TEMPERATURA_ALERTA &&
+            clima.getHumedad() > HUMEDAD_ALERTA;
     }
 
     private void generarYEnviarEmail(Clima clima) {
         String asunto = "Alerta de Clima - Condiciones Extremas";
         String mensaje = String.format(
             "ALERTA: Condiciones climáticas extremas detectadas en %s\n\n" +
-            "Temperatura: %.1f°C\n" +
-            "Humedad: %d%%\n" +
-            "Condición: %s\n" +
-            "Velocidad del viento: %.1f km/h\n\n" +
-            "Se recomienda tomar precauciones.",
+                "Temperatura: %.1f°C\n" +
+                "Humedad: %d%%\n" +
+                "Condición: %s\n" +
+                "Velocidad del viento: %.1f km/h\n\n" +
+                "Se recomienda tomar precauciones.",
             clima.getCiudad(),
             clima.getTemperaturaCelsius(),
             clima.getHumedad(),
@@ -87,8 +86,8 @@ public class AlertasService implements IAlertasService {
             Email email = new Email(destinatario, remitente, asunto, mensaje);
             emailService.crearEmail(email);
         }
-        
-        logger.info("Email de alerta generado para {} - Enviado a {} destinatarios", 
+
+        logger.info("Email de alerta generado para {} - Enviado a {} destinatarios",
             clima.getCiudad(), destinatarios.size());
     }
 } 

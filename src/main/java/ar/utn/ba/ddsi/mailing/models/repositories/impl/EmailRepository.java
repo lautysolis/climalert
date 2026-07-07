@@ -33,8 +33,8 @@ public class EmailRepository implements IEmailRepository {
     @Override
     public List<Email> findByEnviado(boolean enviado) {
         return emails.values().stream()
-                .filter(email -> email.isEnviado() == enviado)
-                .toList();
+            .filter(email -> email.isEnviado() == enviado)
+            .toList();
     }
 
     @Override

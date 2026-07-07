@@ -1,5 +1,6 @@
 package ar.utn.ba.ddsi.mailing.services.impl;
 
+import ar.utn.ba.ddsi.mailing.adapters.IEmailSenderAdapter;
 import ar.utn.ba.ddsi.mailing.models.entities.Email;
 import ar.utn.ba.ddsi.mailing.models.repositories.IEmailRepository;
 import ar.utn.ba.ddsi.mailing.services.IEmailService;
@@ -12,9 +13,11 @@ import java.util.List;
 public class EmailService implements IEmailService {
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
     private final IEmailRepository emailRepository;
+    private final IEmailSenderAdapter emailSenderAdapter;
 
-    public EmailService(IEmailRepository emailRepository) {
+    public EmailService(IEmailRepository emailRepository, IEmailSenderAdapter emailSenderAdapter) {
         this.emailRepository = emailRepository;
+        this.emailSenderAdapter = emailSenderAdapter;
     }
 
     @Override
@@ -34,8 +37,14 @@ public class EmailService implements IEmailService {
     public void procesarPendientes() {
         List<Email> pendientes = emailRepository.findByEnviado(false);
         for (Email email : pendientes) {
-            email.enviar();
-            email.setEnviado(true);
+            try {
+                emailSenderAdapter.enviar(email);
+                email.setEnviado(true);
+            } catch (Exception e) {
+                // Si falla el envio, el email queda pendiente y se reintenta
+                // en la proxima corrida del scheduler.
+                logger.error("Error al enviar email a {}: {}", email.getDestinatario(), e.getMessage());
+            }
             emailRepository.save(email);
         }
     }
@@ -44,11 +53,11 @@ public class EmailService implements IEmailService {
     public void loguearEmailsPendientes() {
         List<Email> pendientes = obtenerEmails(true);
         logger.info("Emails pendientes de envío: {}", pendientes.size());
-        pendientes.forEach(email -> 
-            logger.info("Email pendiente - ID: {}, Destinatario: {}, Asunto: {}", 
+        pendientes.forEach(email ->
+            logger.info("Email pendiente - ID: {}, Destinatario: {}, Asunto: {}",
                 email.getId(),
-                email.getDestinatario(), 
+                email.getDestinatario(),
                 email.getAsunto())
         );
     }
-} 
+}

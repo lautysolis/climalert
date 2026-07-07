@@ -22,4 +22,4 @@ public class AlertasScheduler {
             .doOnError(e -> logger.error("Error en el procesamiento de alertas: {}", e.getMessage()))
             .subscribe();
     }
-} 
+}
